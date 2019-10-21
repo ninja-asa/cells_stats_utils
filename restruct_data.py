@@ -1,7 +1,6 @@
 import pandas as pd
 import os
 
-
 def GetListSeries(directory):
     list_series = []
     entries = os.listdir(directory)
@@ -56,34 +55,83 @@ def GetCellsData(sample_file):
         
 def GetData(directory):
     samples_name = GetSamplesFolder(directory)
-    sample_dataframes = []
+    sample_dataframes = pd.DataFrame()
     
-    for sample in samples_name:
+    for sample in samples_name[0:3]:
+        print("Processing {}".format(sample))
         directory_data = directory+sample+'/'
         series = GetListSeries(directory_data)
         full_sample_data = pd.DataFrame()
         for serie in series:
             spots = GetSpotsData(directory_data+serie)
-            
+            print("Loading {} ...".format(serie))
             samples_data = GetCellsData(directory_data+serie)
             if samples_data.empty:
                 continue
             spots_col = [0]*samples_data.shape[0]
             spots_col[0]=spots
-            spots_df = pd.DataFrame({'Nr. Spots':spots_col}, index=samples_data.index.values)
-            full_series_data = pd.concat([samples_data,spots_df],axis=1)
+            sample_cols=[sample]*samples_data.shape[0]
+            spots_df = pd.DataFrame({'Sample':sample_cols,'Nr. Spots':spots_col}, index=samples_data.index.values)
+            full_series_data = pd.concat([spots_df,samples_data],axis=1)
             full_sample_data = pd.concat([full_sample_data,full_series_data])
-        sample_dataframes.append(full_sample_data)
         full_sample_data.index.name = 'Cell ID'
-        export_excel = full_sample_data.to_excel (directory+sample+'.xlsx', header=True,) 
+        full_sample_data.reset_index()
+        sample_dataframes=sample_dataframes.append(full_sample_data)
+        full_sample_data.to_excel (directory+sample+'.xlsx', header=True) 
         full_sample_data = pd.DataFrame()
-    return full_sample_data
-        
+    print("Data saved to {}".format(directory))
+    return sample_dataframes
+
+def ExtractMetrics(df,directory):
+    vesicles = df[['Sample','Cell Number Of Vesicles']].groupby('Sample').sum()
+    vesicles = vesicles.rename(columns = {'Cell Number Of Vesicles':'Total # Vesicles'})
+    sphericity = df[['Sample','Cell Sphericity']].groupby('Sample').mean()
+    sphericity= sphericity.rename(columns = {'Cell Sphericity':'Mean Sphericity'})
+    volume_total = df[['Sample','Cell Volume']].groupby('Sample').sum()
+    volume_total= volume_total.rename(columns = {'Cell Volume':'Total Volume'})
+    volume_mean = df[['Sample','Cell Volume']].groupby('Sample').mean()
+    volume_mean= volume_mean.rename(columns = {'Cell Volume':'Mean Volume'})
+    chn_int = df[['Sample','Cell Intensity Mean']].groupby('Sample').mean()
+    chn_int= chn_int.rename(columns = {'Cell Intensity Mean':'Mean Intensity'})
+    spots = df[['Sample','Nr. Spots']].groupby('Sample').sum()
+    new_df = pd.concat([vesicles,sphericity,volume_total,volume_mean,chn_int,spots],axis=1)
+    new_df['%MBP+ cells']=new_df.apply(DetermineMBP,axis=1)
+    new_df.to_excel (directory+'summary.xlsx', header=True)
+    print("Created a summary of the results under {}".format(directory+'summary.xlsx'))
+
+def DetermineMBP(data):
+    
+    return data['Total # Vesicles']/data['Nr. Spots']*100
+
+def DetermineMBP2(data):
+    
+    return data['Cell Number Of Vesicles']/data['Nr. Spots']*100
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+def GenerateBoxPlots(data, x, x_range = [], swarmplot=True): 
+    if x_range == []:
+        x_range = [data[x].min(), data[x].max()]
+    f, ax = plt.subplots(figsize=(7, 6))
+    sns.boxplot(x=x, y="Sample", data=data, palette="pastel")
+    sns.swarmplot(x=x, y="Sample", data=data, alpha=".75", color="0.3")
+    ax.xaxis.grid(True)
+    ax.set(ylabel="")
+    f.savefig(x+".pdf", bbox_inches='tight')
+
+    return
+
 import sys        
 import easygui
 if __name__ == "__main__":
-    if  len(sys.argv)>1:
-        directory = sys.argv[1]
-    else: 
-        directory= easygui.diropenbox()+'\\'
-    GetData(directory)
+    #if  len(sys.argv)>1:
+       # directory = sys.argv[1]
+    #else: 
+    directory= easygui.diropenbox()+'\\'
+    samples_data = GetData(directory)
+    ExtractMetrics(samples_data,directory)
+    features = ['Cell Volume', 'Cell Intensity Mean', 'Cell Sphericity','Cell Number Of Vesicles']
+    for feature in features:
+        GenerateBoxPlots(samples_data,feature)
+
+    
