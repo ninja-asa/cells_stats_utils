@@ -57,7 +57,7 @@ def GetData(directory):
     samples_name = GetSamplesFolder(directory)
     sample_dataframes = pd.DataFrame()
     
-    for sample in samples_name[0:3]:
+    for sample in samples_name:
         print("Processing {}".format(sample))
         directory_data = directory+sample+'/'
         series = GetListSeries(directory_data)
@@ -109,29 +109,32 @@ def DetermineMBP2(data):
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-def GenerateBoxPlots(data, x, x_range = [], swarmplot=True): 
+def GenerateBoxPlots(data, x, x_range = [], swarmplot=True, dir="", visualize = False): 
     if x_range == []:
         x_range = [data[x].min(), data[x].max()]
-    f, ax = plt.subplots(figsize=(7, 6))
+    f, ax = plt.subplots(figsize=( 10 , len(data['Sample'].unique())*1.5))
     sns.boxplot(x=x, y="Sample", data=data, palette="pastel")
     sns.swarmplot(x=x, y="Sample", data=data, alpha=".75", color="0.3")
     ax.xaxis.grid(True)
     ax.set(ylabel="")
-    f.savefig(x+".pdf", bbox_inches='tight')
+    if visualize:
+        plt.show()
+    else:
+        f.savefig(directory+x+".pdf")
 
     return
 
 import sys        
 import easygui
 if __name__ == "__main__":
-    #if  len(sys.argv)>1:
-       # directory = sys.argv[1]
-    #else: 
-    directory= easygui.diropenbox()+'\\'
+    if  len(sys.argv)>1:
+        directory = sys.argv[1]
+    else: 
+        directory= easygui.diropenbox()+'\\'
     samples_data = GetData(directory)
     ExtractMetrics(samples_data,directory)
     features = ['Cell Volume', 'Cell Intensity Mean', 'Cell Sphericity','Cell Number Of Vesicles']
     for feature in features:
-        GenerateBoxPlots(samples_data,feature)
+        GenerateBoxPlots(samples_data,feature,dir=directory)
 
     
