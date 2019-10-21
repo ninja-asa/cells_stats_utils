@@ -1,6 +1,36 @@
 import pandas as pd
 import os
 
+SAMPLE_LABELS = {
+    "SampleA": "first",
+    "SampleB": "zwei",
+    "SampleC": "tres",
+    "SampleD": "catorze",
+    "SampleE": "funf",
+    "SampleF": "six",
+    "SampleH": "sieben"
+}
+VISUALIZE = False # if True, it just shows the plot; if false, the plot is saved to PDF
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def GenerateBoxPlots(data, x, x_range = [], swarmplot=True, dir="", visualize = False): 
+    if x_range == []:
+        x_range = [data[x].min(), data[x].max()]
+    f, ax = plt.subplots(figsize=( 20 , len(data['Sample'].unique())*1.5)) # Figure size is set here, you can adjust it
+    sns.boxplot(x=x, y="Description", data=data, palette="pastel")
+    sns.swarmplot(x=x, y="Description", data=data, alpha=".75", color="0.3")
+    ax.xaxis.grid(True)
+    ax.set(ylabel="")
+    
+    if visualize:
+        plt.show()
+    else:
+        f.savefig(directory+x+".pdf")
+
+    return
+
 def GetListSeries(directory):
     list_series = []
     entries = os.listdir(directory)
@@ -99,6 +129,8 @@ def ExtractMetrics(df,directory):
     new_df.to_excel (directory+'summary.xlsx', header=True)
     print("Created a summary of the results under {}".format(directory+'summary.xlsx'))
 
+def ReplaceLabels(data):
+    return SAMPLE_LABELS[data['Sample']]
 def DetermineMBP(data):
     
     return data['Total # Vesicles']/data['Nr. Spots']*100
@@ -107,22 +139,7 @@ def DetermineMBP2(data):
     
     return data['Cell Number Of Vesicles']/data['Nr. Spots']*100
 
-import seaborn as sns
-import matplotlib.pyplot as plt
-def GenerateBoxPlots(data, x, x_range = [], swarmplot=True, dir="", visualize = False): 
-    if x_range == []:
-        x_range = [data[x].min(), data[x].max()]
-    f, ax = plt.subplots(figsize=( 10 , len(data['Sample'].unique())*1.5))
-    sns.boxplot(x=x, y="Sample", data=data, palette="pastel")
-    sns.swarmplot(x=x, y="Sample", data=data, alpha=".75", color="0.3")
-    ax.xaxis.grid(True)
-    ax.set(ylabel="")
-    if visualize:
-        plt.show()
-    else:
-        f.savefig(directory+x+".pdf")
 
-    return
 
 import sys        
 import easygui
@@ -134,7 +151,8 @@ if __name__ == "__main__":
     samples_data = GetData(directory)
     ExtractMetrics(samples_data,directory)
     features = ['Cell Volume', 'Cell Intensity Mean', 'Cell Sphericity','Cell Number Of Vesicles']
+    samples_data['Description']=samples_data.apply(ReplaceLabels,axis=1)
     for feature in features:
-        GenerateBoxPlots(samples_data,feature,dir=directory)
+        GenerateBoxPlots(samples_data,feature,dir=directory, visualize=VISUALIZE)
 
     
