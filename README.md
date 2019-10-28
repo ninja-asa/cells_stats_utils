@@ -38,8 +38,10 @@ Once you run, the script will generate _per sample_, a excel sheet containing al
 - mean intensity channel 2
 - number of spots (one instance per serie)
 
-Furthermore, a boxplot overlapped with a swarm plot will be generated for each feature (to compare across samples) and saved to the folder.
+Furthermore, a
+- boxplot overlapped with a swarm plot will be generated for each feature (to compare across samples) and saved to the folder.
 ![BoxPlot](https://user-images.githubusercontent.com/26262402/67725215-7b198400-f9d9-11e9-8bc5-7de20af7ff83.png)
+- a excel sheet with the summary of the results generated (per sample, the average nr. of spots, vesicles, sphericity, volume, mean intensity of channel 2 and % %MBP+ cells.
 
 You can configure the y-labels by editing in the script the dictionary `SAMPLE_LABELS`.
 
