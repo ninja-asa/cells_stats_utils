@@ -1,0 +1,6 @@
+###### Requirements without Version Specifiers ######
+pandas
+seaborn
+easygui
+openpyxl
+xlrd
