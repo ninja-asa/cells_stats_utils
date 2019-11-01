@@ -162,7 +162,7 @@ class IMARISDataProcessor:
 
     def ExtractMetricsForSamples(self, df):
 
-        
+
         # SUM
         vesicles = df[['Sample','Cell Number Of Vesicles']].groupby('Sample').sum()
         # MEAN

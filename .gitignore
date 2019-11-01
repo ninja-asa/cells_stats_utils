@@ -1,5 +1,8 @@
 *.xlsx
 *.xls
 *.pdf
-.vscode
+.vscode/
 env/
+.eggs/
+buid/
+restruct_data.egg-info/

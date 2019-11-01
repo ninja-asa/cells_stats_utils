@@ -4,3 +4,4 @@ seaborn
 easygui
 openpyxl
 xlrd
+wheel
