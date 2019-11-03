@@ -154,37 +154,41 @@ class IMARISDataProcessor:
         return sample_data
 
     def CreateColumnForSerie(self, value, nr_cells, only_first = True):
+        """CreateColumnForSerie Generate column nr_cells long containing only value or having only the first cell with value and the remainder filled with zero.
+        
+        Args:
+            value ([str, int, float]): value to be added present in the column
+            nr_cells ([int]): number of cells the column contains
+            only_first (bool, optional): Whehter the column is filled with the same value or just the first cell bears the value whereas the remainder are set to zero. Defaults to True.
+        
+        Returns:
+            [list]: list containing value (in every cell or only the first)
+        """
         if only_first:
             new_col = [0]*nr_cells
-            val_col[0]=value
+            new_col[0]=value
         else :
             new_col=[value]*nr_cells
+        return new_col
+        
 
-    def ExtractMetricsForSamples(self, df):
+    def ExtractMetricsForSamples(self, df, save_to_excel=True):
+        """ExtractMetricsForSamples groups dataframe by Sample and extracts statistical information on each of the features.
+        
+        Args:
+            df (pd.DataFrame): input dataframe with the full information on the cells
+            save_to_excel (bool, optional): whether metrics should be exported as an excel file. Defaults to True.
+        
+        Returns:
+            [pd.DataFrame]: contains statistics per sample type of the input dataframe
+        """
+        metrics = df.groupby('Sample').describe()
+        
+        if save_to_excel:
+            metrics.to_excel (self.directory+'summary.xlsx', header=True)
+            print("Created a summary of the results under {}".format(self.directory+'summary.xlsx'))
 
-
-        # SUM
-        vesicles = df[['Sample','Cell Number Of Vesicles']].groupby('Sample').sum()
-        # MEAN
-
-        # MAX
-
-        # MIN
-        vesicles = vesicles.rename(columns = {'Cell Number Of Vesicles':'Total # Vesicles'})
-        sphericity = df[['Sample','Cell Sphericity']].groupby('Sample').mean()
-        sphericity= sphericity.rename(columns = {'Cell Sphericity':'Mean Sphericity'})
-        volume_total = df[['Sample','Cell Volume']].groupby('Sample').sum()
-        volume_total= volume_total.rename(columns = {'Cell Volume':'Total Volume'})
-        volume_mean = df[['Sample','Cell Volume']].groupby('Sample').mean()
-        volume_mean= volume_mean.rename(columns = {'Cell Volume':'Mean Volume'})
-        chn_int = df[['Sample','Cell Intensity Mean']].groupby('Sample').mean()
-        chn_int= chn_int.rename(columns = {'Cell Intensity Mean':'Mean Intensity'})
-        spots = df[['Sample','Nr. Spots']].groupby('Sample').sum()
-        new_df = pd.concat([vesicles,sphericity,volume_total,volume_mean,chn_int,spots],axis=1)
-        new_df['%MBP+ cells']=new_df.apply(DetermineMBP,axis=1)
-        new_df.to_excel (directory+'summary.xlsx', header=True)
-        print("Created a summary of the results under {}".format(directory+'summary.xlsx'))
-
+        return metrics
 
 SAMPLE_LABELS = {
     "SampleA": "first",
