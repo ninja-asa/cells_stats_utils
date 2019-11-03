@@ -5,3 +5,4 @@ easygui
 openpyxl
 xlrd
 wheel
+xlwt
