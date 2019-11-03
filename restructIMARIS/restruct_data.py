@@ -43,11 +43,12 @@ class IMARISDataProcessor:
             save_to_pickle (bool, optional): Save dataframe containing all the samples data. Defaults to False.
         
         Returns:
-            [pd.DataFrame]: Samples data
+            pd.DataFrame: Samples data
         """
         self.samples_name = self.IdentifySamples()
+        self.VerifySampleNames()
         samples_dataframes = pd.DataFrame()
-        
+
         # Iterating over each (sample) folder
         for sample in self.samples_name[0:2]:
             print("Processing {}".format(sample))
@@ -78,6 +79,8 @@ class IMARISDataProcessor:
             if save_to_excel:
                 sample_data.to_excel (directory+sample+'.xlsx', header=True) 
         print("Data saved to {}".format(directory))
+        samples_dataframes['Sample']=samples_dataframes.apply(self.ReplaceSampleLabels,axis=1)
+
         if save_to_pickle:
             from datetime import date
             samples_dataframes.to_pickle(self.directory+str(date.today().strftime("%Y%m%d"))+ ".pkl")
@@ -96,8 +99,16 @@ class IMARISDataProcessor:
             if os.path.isdir(directory+entry) and 'Sample' in entry: # if it is a folder and contains "Sample"
                 list_samples.append(entry) # added to the list of samples
         list_samples.sort() # sort them 
-        return list_samples     
-        
+        return list_samples  
+
+    def VerifySampleNames(self):
+        if not self.sample_labels:
+            self.sample_labels= dict(zip(self.samples_name,self.samples_name))
+        else:
+            for identified_sample_name in self.samples_name:
+                if identified_sample_name not in self.sample_labels.keys():
+                    self.sample_labels[identified_sample_name]=identified_sample_name
+                
     def IdentifySeries(self, sample_name):
         """IdentifySeries finds within a sample folder, all the series.
         
@@ -185,14 +196,22 @@ class IMARISDataProcessor:
         metrics = df.groupby('Sample').describe(percentiles=[])
         
         if save_to_excel:
-            grouped = metrics.unstack(1)
             with pd.ExcelWriter(self.directory+'summary.xlsx') as writer:  # doctest: +SKIP
-                grouped[:,'mean'].to_excel(writer, sheet_name= 'summary',header=True)
-                grouped.to_excel (writer, sheet_name='full statistics', header=True)
+                temp = metrics.unstack(1)[:,'mean'].unstack(0)
+                temp['%MBP']=temp.apply(self.DetermineMBP, axis=1)
+                temp.to_excel(writer, sheet_name= 'summary',header=True)
+                metrics.unstack(1).to_excel(writer, sheet_name='full statistics', header=True)
             
             print("Created a summary of the results under {}".format(self.directory+'summary.xlsx'))
 
         return metrics
+    
+    def DetermineMBP(self,data):
+        return data['Cell Number Of Vesicles']/data['Nr. Spots']*100
+
+    def ReplaceSampleLabels(self,datarow):
+        return self.sample_labels[datarow['Sample']]
+        
 
 SAMPLE_LABELS = {
     "SampleA": "first",
@@ -245,9 +264,9 @@ def GenerateBoxPlots(data, x, x_range = [], swarmplot=True, dir="", visualize = 
 
 # def ReplaceLabels(data):
 #     return SAMPLE_LABELS[data['Sample']]
-# def DetermineMBP(data):
+def DetermineMBP(data):
     
-#     return data['Total # Vesicles']/data['Nr. Spots']*100
+     return data['Cell Number Of Vesicles']/data['Nr. Spots']*100
 
 # def DetermineMBP2(data):
     
