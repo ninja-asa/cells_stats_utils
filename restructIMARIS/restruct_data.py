@@ -92,6 +92,9 @@ class IMARISDataProcessor:
             if save_to_excel:
                 sample_data.to_excel (directory+sample+'.xlsx', header=True) 
         print("Data saved to {}".format(directory))
+        if samples_dataframes.empty:
+            return samples_dataframes
+
         samples_dataframes['Sample']=samples_dataframes.apply(self.ReplaceSampleLabels,axis=1)
 
         if save_to_pickle:
@@ -254,6 +257,9 @@ if __name__ == "__main__":
         directory= easygui.diropenbox()+os.sep
     processor = IMARISDataProcessor(directory, sample_labels=SAMPLE_LABELS)
     samples_data = processor.ExtractSamplesData(save_to_excel=True, save_to_pickle=True)
+    if samples_data.empty: 
+        easygui.msgbox("No data. Are you sur you provided the correct path?", "Error")
+        sys.exit()
     metrics = processor.ExtractMetricsForSamples(samples_data,save_to_excel=True)
     features = ['Cell Volume', 'Cell Intensity Mean', 'Cell Sphericity','Cell Number Of Vesicles']
     for feature in features:
