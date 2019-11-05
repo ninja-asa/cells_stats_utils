@@ -2,14 +2,16 @@ import pandas as pd
 import os
 
 SAMPLE_LABELS = {
-    "SampleA": "first",
-    "SampleB": "zwei",
-    "SampleC": "tres",
-    "SampleD": "catorze",
-    "SampleE": "funf",
-    "SampleF": "six",
-    "SampleH": "sieben"
+    "SampleA": "400uM PVGLIG Ox10 + 40uM RGD",
+    "SampleB": "170uM PVGLIG Ox10 + 40uM RGD",
+    "SampleC": "170uM PVGLIG Ox5 + 40uM RGD",
+    "SampleD": "HMW",
+    "SampleE": "130uM PVGLIG + 40uM RGD",
+    "SampleF": "Ox10 (~400uM) + 40uM RGD",
+    "SampleG": "Ox10 (~170uM) + 40uM RGD",
+    "SampleH": "Ox5 (~170uM) + 40uM RGD"
 }
+
 VISUALIZE = False # if True, it just shows the plot; if false, the plot is saved to PDF
 
 import seaborn as sns
@@ -57,11 +59,11 @@ def GetSpotsData(sample_file):
 def GetCellsData(sample_file):
     xls = pd.ExcelFile(sample_file+'_cells.xls')
     data_vesicles = pd.read_excel(xls,
-                                  sheet_name='Cell Number Of Vesicles Ves-10',
+                                  sheet_name='Cell Cytoplasm Number of Ve-3',
                                   skiprows=1)
     # remove nr of vesicles <1
-    indices = data_vesicles['Cell Number Of Vesicles']>0
-    data_vesicles = data_vesicles[indices]['Cell Number Of Vesicles'] 
+    indices = data_vesicles['Cell Cytoplasm Number of Vesicles']>0
+    data_vesicles = data_vesicles[indices]['Cell Cytoplasm Number of Vesicles'] 
     
     data_green_chn = pd.read_excel(xls,
                                    sheet_name='Cell Intensity Mean Ch=2 Img=1',
@@ -86,35 +88,42 @@ def GetCellsData(sample_file):
 def GetData(directory):
     samples_name = GetSamplesFolder(directory)
     sample_dataframes = pd.DataFrame()
-    
+    spots_dataframes = pd.DataFrame()
     for sample in samples_name:
         print("Processing {}".format(sample))
         directory_data = directory+sample+'/'
         series = GetListSeries(directory_data)
         full_sample_data = pd.DataFrame()
+        full_sample_spots = pd.DataFrame()
         for serie in series:
-            spots = GetSpotsData(directory_data+serie)
             print("Loading {} ...".format(serie))
+            spots = GetSpotsData(directory_data+serie)
+            serie_spots = pd.DataFrame({'Sample':[sample],'Nr. Spots':[spots]}, index=[0])
+            full_sample_spots = pd.concat([full_sample_spots,serie_spots])
             samples_data = GetCellsData(directory_data+serie)
-            if samples_data.empty:
+          
+            if samples_data.empty: 
                 continue
-            spots_col = [0]*samples_data.shape[0]
-            spots_col[0]=spots
             sample_cols=[sample]*samples_data.shape[0]
-            spots_df = pd.DataFrame({'Sample':sample_cols,'Nr. Spots':spots_col}, index=samples_data.index.values)
-            full_series_data = pd.concat([spots_df,samples_data],axis=1)
+            sample_df = pd.DataFrame({'Sample':sample_cols}, index=samples_data.index.values)
+            full_series_data = pd.concat([sample_df,samples_data],axis=1)
             full_sample_data = pd.concat([full_sample_data,full_series_data])
         full_sample_data.index.name = 'Cell ID'
         full_sample_data.reset_index()
-        sample_dataframes=sample_dataframes.append(full_sample_data)
-        full_sample_data.to_excel (directory+sample+'.xlsx', header=True) 
-        full_sample_data = pd.DataFrame()
-    print("Data saved to {}".format(directory))
-    return sample_dataframes
+        full_sample_spots.reset_index()
 
-def ExtractMetrics(df,directory):
-    vesicles = df[['Sample','Cell Number Of Vesicles']].groupby('Sample').sum()
-    vesicles = vesicles.rename(columns = {'Cell Number Of Vesicles':'Total # Vesicles'})
+        sample_dataframes=sample_dataframes.append(full_sample_data)
+        spots_dataframes = spots_dataframes.append(full_sample_spots)
+        with pd.ExcelWriter(directory+sample+'.xlsx') as writer:  # doctest: +SKIP
+            full_sample_data.to_excel(writer, sheet_name= 'cell_data',header=True)
+            full_sample_spots.to_excel(writer, sheet_name= 'spots_data',header=True)
+            
+    print("Data saved to {}".format(directory))
+    return sample_dataframes, spots_dataframes
+
+def ExtractMetrics(df, spots_df ,directory):
+    vesicles = df[['Sample','Cell Cytoplasm Number of Vesicles']].groupby('Sample').sum()
+    vesicles = vesicles.rename(columns = {'Cell Cytoplasm Number of Vesicles':'Total # Vesicles'})
     sphericity = df[['Sample','Cell Sphericity']].groupby('Sample').mean()
     sphericity= sphericity.rename(columns = {'Cell Sphericity':'Mean Sphericity'})
     volume_total = df[['Sample','Cell Volume']].groupby('Sample').sum()
@@ -123,7 +132,7 @@ def ExtractMetrics(df,directory):
     volume_mean= volume_mean.rename(columns = {'Cell Volume':'Mean Volume'})
     chn_int = df[['Sample','Cell Intensity Mean']].groupby('Sample').mean()
     chn_int= chn_int.rename(columns = {'Cell Intensity Mean':'Mean Intensity'})
-    spots = df[['Sample','Nr. Spots']].groupby('Sample').sum()
+    spots = spots_df[['Sample','Nr. Spots']].groupby('Sample').sum()
     new_df = pd.concat([vesicles,sphericity,volume_total,volume_mean,chn_int,spots],axis=1)
     new_df['%MBP+ cells']=new_df.apply(DetermineMBP,axis=1)
     new_df.to_excel (directory+'summary.xlsx', header=True)
@@ -137,7 +146,7 @@ def DetermineMBP(data):
 
 def DetermineMBP2(data):
     
-    return data['Cell Number Of Vesicles']/data['Nr. Spots']*100
+    return data['Cell Cytoplasm Number of Vesicles']/data['Nr. Spots']*100
 
 
 
@@ -148,9 +157,9 @@ if __name__ == "__main__":
         directory = sys.argv[1]
     else: 
         directory= easygui.diropenbox()+'\\'
-    samples_data = GetData(directory)
-    ExtractMetrics(samples_data,directory)
-    features = ['Cell Volume', 'Cell Intensity Mean', 'Cell Sphericity','Cell Number Of Vesicles']
+    samples_data, spots_dataframes = GetData(directory)
+    ExtractMetrics(samples_data,spots_dataframes,directory)
+    features = ['Cell Volume', 'Cell Intensity Mean', 'Cell Sphericity','Cell Cytoplasm Number of Vesicles']
     samples_data['Description']=samples_data.apply(ReplaceLabels,axis=1)
     for feature in features:
         GenerateBoxPlots(samples_data,feature,dir=directory, visualize=VISUALIZE)
