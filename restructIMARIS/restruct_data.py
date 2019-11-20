@@ -35,10 +35,10 @@ class IMARISDataProcessor:
     - number of spots
     """
     CELLS_SHEET_COLUMN = {
-        'Cell Number Of Vesicles Ves-10': ['Cell Number Of Vesicles', 'Nr. Vesicles'],
-        'Cell Intensity Mean Ch=2 Img=1': ['Cell Intensity Mean', 'Intensity Mean'],
-        'Cell Sphericity': ['Cell Sphericity', 'Sphericity'],
-        'Cell Volume' : ['Cell Volume', 'Volume']
+        'Vesicles': ['Cell Cytoplasm Number of Ve-3','Cell Cytoplasm Number of Vesicles'],
+        'Intensity' : ['Cell Intensity Mean Ch=2 Img=1','Cell Intensity Mean'],
+        'Sphericity' : ['Cell Sphericity', 'Cell Sphericity'],
+        'Volume' : ['Cell Volume', 'Cell Volume']
     }
 
     SPOTS_OUT_COL_NAME = 'Nr. Spots'
@@ -61,45 +61,57 @@ class IMARISDataProcessor:
         self.samples_name = self.IdentifySamples()
         self.VerifySampleNames()
         samples_dataframes = pd.DataFrame()
-
+        samples_spots = pd.DataFrame() 
         # Iterating over each (sample) folder
-        for sample in self.samples_name[0:2]:
+        for sample in self.samples_name:
             print("Processing {}".format(sample))
             
             series = self.IdentifySeries(sample) # and getting all the series                        
-            sample_data = pd.DataFrame() # dataframe which will contain all the sample data
+            sample_data = pd.DataFrame() # dataframe which will contain all the sample dataº
+            sample_spots = pd.DataFrame()
             for serie in series:
-                nr_spots = self.ExtractSerieSpotsData(sample, serie) # get the cells which we categorized as "spot"
                 print("Loading {} ...".format(serie))
+                # Handle spots data              
+                nr_spots = self.ExtractSerieSpotsData(sample, serie) # get the cells which we categorized as "spot"
+                serie_spots = pd.DataFrame({'Sample':[sample],'Nr. Spots':[nr_spots]}, index=[0])
+                sample_spots = pd.concat([sample_spots,serie_spots])
+
+                # Handle cells data
                 serie_data = self.ExtractSerieCellsData(sample, serie)
                 if serie_data.empty:
                     continue
                 
-                new_sample_spots_df_cols = pd.DataFrame(
-                    {'Sample':self.CreateColumnForSerie(value=sample,nr_cells=serie_data.shape[0], only_first = False),
-                    self.SPOTS_OUT_COL_NAME:self.CreateColumnForSerie(value=nr_spots,nr_cells=serie_data.shape[0])}, 
+                sample_col_df  = pd.DataFrame(
+                    {'Sample':self.CreateColumnForSerie(value=sample,nr_cells=serie_data.shape[0])}, 
                     index=serie_data.index.values)
-                full_series_data = pd.concat([
-                    new_sample_spots_df_cols,
+
+                full_serie_data  = pd.concat([
+                    sample_col_df,
                     serie_data],
                     axis=1)
                     # concatenating series data to form the overall sample dataframe
-                sample_data = pd.concat([sample_data,full_series_data])
+                sample_data = pd.concat([sample_data,full_serie_data])
             
             sample_data.reset_index() # remove cell id as index to avoid overriding when concatenating
+            sample_spots.reset_index()
             samples_dataframes = pd.concat((samples_dataframes,sample_data))
-#            samples_dataframes=sample_dataframes.append(sample_data.copy())
+            samples_spots = pd.concat((samples_spots,sample_spots))
             if save_to_excel:
-                sample_data.to_excel (directory+sample+'.xlsx', header=True) 
+                with pd.ExcelWriter(directory+sample+'.xlsx') as writer:
+                    sample_data.to_excel(writer,sheet_name="cell_data", header=True) 
+                    sample_spots.to_excel(writer,sheet_name="spots_data", header=True) 
         print("Data saved to {}".format(directory))
         if samples_dataframes.empty:
-            return samples_dataframes
+            return samples_dataframes, samples_spots
 
         samples_dataframes['Sample']=samples_dataframes.apply(self.ReplaceSampleLabels,axis=1)
+        samples_spots['Sample']=samples_spots.apply(self.ReplaceSampleLabels,axis=1)
 
         if save_to_pickle:
-            samples_dataframes.to_pickle(self.directory+date.today().strftime("%Y%m%d")+ ".pkl")
-        return samples_dataframes
+            samples_dataframes.to_pickle(self.directory+'cells_data_'+ date.today().strftime("%Y%m%d")+ ".pkl")
+            samples_spots.to_pickle(self.directory+'spots_data_'+date.today().strftime("%Y%m%d")+ ".pkl")
+            
+        return samples_dataframes, samples_spots
             
     def IdentifySamples(self):
         """IdentifySamples finds all the samples (each sample has its own folder)  
@@ -164,13 +176,15 @@ class IMARISDataProcessor:
         """
         xls = pd.ExcelFile(os.path.join(self.directory, sample_name, serie_name)+'_cells.xls')
         data_dict = {}
-        for sheet, column in self.CELLS_SHEET_COLUMN.items():
-            data_dict[column[0]] = pd.read_excel(xls,
-                                    sheet_name=sheet,
+        for assigned_name, sheet_col_name in self.CELLS_SHEET_COLUMN.items():
+            data_dict[assigned_name] = pd.read_excel(xls,
+                                    sheet_name=sheet_col_name[0],
                                     skiprows=1,
-                                    usecols = [column[0]])
+                                    usecols = [sheet_col_name[1]]).rename(
+                                        columns = {sheet_col_name[1]:assigned_name}
+                                    )
         # remove nr of vesicles <1
-        indices = data_dict[self.CELLS_SHEET_COLUMN['Cell Number Of Vesicles Ves-10'][0]]>0
+        indices = data_dict['Vesicles']>0
 
         
         sample_data = pd.concat([data[indices.values] for data in data_dict.values()],
@@ -179,7 +193,7 @@ class IMARISDataProcessor:
 
         return sample_data
 
-    def CreateColumnForSerie(self, value, nr_cells, only_first = True):
+    def CreateColumnForSerie(self, value, nr_cells):
         """CreateColumnForSerie Generate column nr_cells long containing only value or having only the first cell with value and the remainder filled with zero.
         
         Args:
@@ -190,15 +204,12 @@ class IMARISDataProcessor:
         Returns:
             [list]: list containing value (in every cell or only the first)
         """
-        if only_first:
-            new_col = [0]*nr_cells
-            new_col[0]=value
-        else :
-            new_col=[value]*nr_cells
+
+        new_col=[value]*nr_cells
         return new_col
         
 
-    def ExtractMetricsForSamples(self, df, save_to_excel=True):
+    def ExtractMetricsForSamples(self, cells_df, spots_df, save_to_excel=True):
         """ExtractMetricsForSamples groups dataframe by Sample and extracts statistical information on each of the features.
         
         Args:
@@ -208,12 +219,20 @@ class IMARISDataProcessor:
         Returns:
             [pd.DataFrame]: contains statistics per sample type of the input dataframe
         """
-        metrics = df.groupby('Sample').describe(percentiles=[])
+
+        metrics = cells_df.groupby('Sample').describe(percentiles=[])
         
         if save_to_excel:
-            with pd.ExcelWriter(self.directory+'summary.xlsx') as writer:  # doctest: +SKIP
+            with pd.ExcelWriter(self.directory+'summary.xlsx',mode = 'w') as writer:  # doctest: +SKIP
                 temp = metrics.unstack(1)[:,'mean'].unstack(0)
+                sum_vesicles = cells_df.groupby('Sample').sum()['Vesicles']
+                sum_spots = spots_df.groupby('Sample').sum()['Nr. Spots']
+                sum_vesicles_spots = pd.concat([sum_vesicles, sum_spots],axis=1)
+                temp['Vesicles'] = sum_vesicles_spots['Vesicles']
+                temp['Nr. Spots'] = sum_vesicles_spots['Nr. Spots']
                 temp['%MBP']=temp.apply(self.DetermineMBP, axis=1)
+                metrics = metrics.drop(columns = 'count', level=1)
+                metrics = metrics.drop(columns = 'Vesicles')
                 temp.to_excel(writer, sheet_name= 'summary',header=True)
                 metrics.unstack(1).to_excel(writer, sheet_name='full statistics', header=True)
             
@@ -222,7 +241,7 @@ class IMARISDataProcessor:
         return metrics
     
     def DetermineMBP(self,data):
-        return data['Cell Number Of Vesicles']/data['Nr. Spots']*100
+        return data['Vesicles']/data[self.SPOTS_OUT_COL_NAME]*100
 
     def ReplaceSampleLabels(self,datarow):
         return self.sample_labels[datarow['Sample']]
@@ -256,13 +275,13 @@ if __name__ == "__main__":
     else: 
         directory= easygui.diropenbox()+os.sep
     processor = IMARISDataProcessor(directory, sample_labels=SAMPLE_LABELS)
-    samples_data = processor.ExtractSamplesData(save_to_excel=True, save_to_pickle=True)
+    samples_data, samples_spots = processor.ExtractSamplesData(save_to_excel=True, save_to_pickle=True)
     if samples_data.empty: 
         easygui.msgbox("No data. Are you sur you provided the correct path?", "Error")
         sys.exit()
-    metrics = processor.ExtractMetricsForSamples(samples_data,save_to_excel=True)
-    features = ['Cell Volume', 'Cell Intensity Mean', 'Cell Sphericity','Cell Number Of Vesicles']
-    for feature in features:
+    metrics = processor.ExtractMetricsForSamples(samples_data, samples_spots,save_to_excel=True)
+   
+    for feature in processor.CELLS_SHEET_COLUMN.keys():
          processor.GenerateBoxPlot(samples_data,feature,visualize=VISUALIZE)
 
     
