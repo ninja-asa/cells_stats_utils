@@ -48,7 +48,10 @@ Plots are automatically generated as well: a boxplot overlapped with a swarm plo
 
 ![BoxPlot](https://user-images.githubusercontent.com/26262402/67725215-7b198400-f9d9-11e9-8bc5-7de20af7ff83.png)
 
-You can configure the y-labels by editing in the script the dictionary `SAMPLE_LABELS`.
+By editing the :page_facing_up: `config.json` you can set:
++ sample names 
++ sheet and columns name in source excel files
+
 
 ## Report Error or Feature
 
