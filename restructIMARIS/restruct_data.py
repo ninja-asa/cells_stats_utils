@@ -153,7 +153,12 @@ class IMARISDataProcessor:
         Returns:
             [int]: number of spots in serie 
         """
-        xls = pd.ExcelFile(os.path.join(self.directory, sample_name, serie_name)+'_Spots.xls')
+        filename = os.path.join(self.directory, sample_name, serie_name)
+        if (os.path.isfile(filename+'_Spots.xls')):
+            xls = pd.ExcelFile(filename+'_Spots.xls')
+        else:
+            xls = pd.ExcelFile(filename+'_spots.xls')
+
         return pd.read_excel(xls,sheet_name='Diameter',skiprows=1).shape[0] 
 
     def ExtractSerieCellsData(self, sample_name, serie_name):
@@ -166,7 +171,12 @@ class IMARISDataProcessor:
             [pd.DataFrame]: dataframe with columns Number of Vesicles, Intensity Mean, Sphericity,
                 Volume and ID. Only the cells with at least a vesicles were left in the DataFrame
         """
-        xls = pd.ExcelFile(os.path.join(self.directory, sample_name, serie_name)+'_Cells.xls')
+        filename = os.path.join(self.directory, sample_name, serie_name)
+        if (os.path.isfile(filename+'_Cells.xls')):
+            xls = pd.ExcelFile(filename+'_Cells.xls')
+        else:
+            xls = pd.ExcelFile(filename+'_cells.xls')
+
         data_dict = {}
         for assigned_name, sheet_col_name in self.CELLS_SHEET_COLUMN.items():
             data_dict[assigned_name] = pd.read_excel(xls,
