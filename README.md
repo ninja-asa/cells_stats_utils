@@ -12,7 +12,10 @@ pip install -r requirements.txt
 ## Usage
 ### How to run?
 
-Open a terminal and run `python restruct_data`.
+Open a terminal and enter
+`cd path\to\restructIMARIS\restructdata`
+and run
+`python restruct_data`.
 
 You will be prompted to select a folder. This folder shall contain the "Sample"'s data where for example a folder shall have:
 

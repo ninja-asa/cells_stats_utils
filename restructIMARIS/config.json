@@ -9,7 +9,7 @@
         "SampleH": "sieben"
     },
     "CellSheetColNames":{
-        "Vesicles": ["Cell Cytoplasm Number of Ve-3","Cell Cytoplasm Number of Vesicles"],
+        "Vesicles": ["Cell Number Of Vesicles Ves-34","Cell Number Of Vesicles"],
         "Intensity" : ["Cell Intensity Mean Ch=2 Img=1","Cell Intensity Mean"],
         "Sphericity" : ["Cell Sphericity", "Cell Sphericity"],
         "Volume" : ["Cell Volume", "Cell Volume"]
