@@ -37,6 +37,7 @@ class IMARISDataProcessor:
         self.CELLS_SHEET_COLUMN = data['CellSheetColNames']
         self.sample_labels = data['SampleLabels']
         self.SPOTS_OUT_COL_NAME = data['SpotOutputName']
+        self.VESICLES_OVERALL_SHEET = data['VesiclesOverallSheetColNames']
 
     
     def ExtractSamplesData(self, save_to_excel = True, save_to_pickle = False):
@@ -70,6 +71,7 @@ class IMARISDataProcessor:
                 # Handle cells data
                 serie_data = self.ExtractSerieCellsData(sample, serie)
                 if serie_data.empty:
+                    print("No Vesicles or No Data|")
                     continue
                 
                 sample_col_df  = pd.DataFrame(
@@ -176,7 +178,8 @@ class IMARISDataProcessor:
             xls = pd.ExcelFile(filename+'_Cells.xls')
         else:
             xls = pd.ExcelFile(filename+'_cells.xls')
-
+        if not self.CheckIfVesicles(xls):
+            return pd.DataFrame()
         data_dict = {}
         for assigned_name, sheet_col_name in self.CELLS_SHEET_COLUMN.items():
             data_dict[assigned_name] = pd.read_excel(xls,
@@ -198,6 +201,15 @@ class IMARISDataProcessor:
 
         return sample_data
 
+    def CheckIfVesicles(self, xls_file):
+        data = pd.read_excel(xls_file, sheet_name=self.VESICLES_OVERALL_SHEET[0],
+                            skiprows=1)
+        total = data['Value'].loc[data['Variable']==self.VESICLES_OVERALL_SHEET[1]].values[0]
+        if total == 0:
+            return False
+
+        return True
+        
     def CreateColumnForSerie(self, value, nr_cells):
         """CreateColumnForSerie Generate column nr_cells long containing only value or having only the first cell with value and the remainder filled with zero.
         
