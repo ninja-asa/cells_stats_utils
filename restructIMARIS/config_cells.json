@@ -14,5 +14,7 @@
         "Sphericity" : ["Cell Sphericity", "Cell Sphericity"],
         "Volume" : ["Cell Volume", "Cell Volume"]
     },
+    "VesiclesOverallSheetColNames": ["Overall","Total Number of Vesicles Type As"]
+    ,
     "SpotOutputName":"Nr. Spots"
 }

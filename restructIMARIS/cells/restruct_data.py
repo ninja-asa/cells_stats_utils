@@ -32,7 +32,7 @@ class IMARISDataProcessor:
         self.ReadConfigFile()
 
     def ReadConfigFile(self):
-        with open("config.json") as json_data_file:
+        with open("config_cells.json") as json_data_file:
             data=json.load(json_data_file)
         self.CELLS_SHEET_COLUMN = data['CellSheetColNames']
         self.sample_labels = data['SampleLabels']
@@ -117,7 +117,7 @@ class IMARISDataProcessor:
         list_samples =[]
         entries = os.listdir(self.directory) # all files/folder within provided directory
         for entry in entries:
-            if os.path.isdir(directory+entry) and 'Sample' in entry: # if it is a folder and contains "Sample"
+            if os.path.isdir(self.directory+entry) and 'Sample' in entry: # if it is a folder and contains "Sample"
                 list_samples.append(entry) # added to the list of samples
         list_samples.sort() # sort them 
         return list_samples  
@@ -132,7 +132,7 @@ class IMARISDataProcessor:
                 
     def IdentifySeries(self, sample_name):
         """IdentifySeries finds within a sample folder, all the series.
-        
+        def
         Returns:
             [list]: contains the list of series existing for a given sample
         """
@@ -282,24 +282,3 @@ class IMARISDataProcessor:
             
 
 
-VISUALIZE = False # if True, it just shows the plot; if false, the plot is saved to PDF
-
-import sys        
-import easygui
-
-if __name__ == "__main__":
-    if  len(sys.argv)>1:
-        directory = sys.argv[1]
-    else: 
-        directory= easygui.diropenbox()+os.sep
-    processor = IMARISDataProcessor(directory)
-    samples_data, samples_spots = processor.ExtractSamplesData(save_to_excel=True, save_to_pickle=True)
-    if samples_data.empty: 
-        easygui.msgbox("No data. Are you sur you provided the correct path?", "Error")
-        sys.exit()
-    metrics = processor.ExtractMetricsForSamples(samples_data, samples_spots,save_to_excel=True)
-   
-    for feature in processor.CELLS_SHEET_COLUMN.keys():
-         processor.GenerateBoxPlot(samples_data,feature,visualize=VISUALIZE)
-
-    

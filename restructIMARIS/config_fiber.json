@@ -1,0 +1,16 @@
+{
+    "Sheets": {
+        "Dendrite Length": ["Mean","Min", "Max"],
+        "Dendrite Mean Diameter":["Mean"]   
+    },
+    
+    "SampleLabels":{
+        "SampleA": "first",
+        "SampleB": "ry",
+        "SampleC": "ties",
+        "SampleD": "cathi",
+        "SampleE": "funf",
+        "SampleF": "six",
+        "SampleH": "sieben"
+    }
+}

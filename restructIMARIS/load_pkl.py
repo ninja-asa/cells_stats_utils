@@ -1,4 +1,4 @@
-from restruct_data import IMARISDataProcessor
+from cells.restruct_data import IMARISDataProcessor
 import sys        
 import easygui
 import os
