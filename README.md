@@ -1,4 +1,4 @@
-# IMARIS cell data extractor
+# IMARIS data "restructor" 
 
 ## Dependencies
 
@@ -10,16 +10,22 @@ pip install -r requirements.txt
 ```
 
 ## Usage
+
 ### How to run?
 
 Open a terminal and enter
 `cd path\to\restructIMARIS\restructdata`
-and run
-`python restruct_data`.
+and either run
 
-You will be prompted to select a folder. This folder shall contain the "Sample"'s data where for example a folder shall have:
+`python process_dendrite_data.py` or
+
+`python process_cells_data.py`
+
+
+In both cases, you will be prompted to select a folder. This folder shall contain the "Sample"'s data where for example a folder shall have:
 
 ```
+process_cells_data
 (SELECTED FOLDER)
 ¦   
 +---SampleA
@@ -32,9 +38,21 @@ You will be prompted to select a folder. This folder shall contain the "Sample"'
 ¦       
 +---(...)
 ```
-You can also provide the path as an argument when executing the script `python restruct_data path/to/folder`.
 
-### What do I get?
+```
+process_dendrite_data
+(SELECTED FOLDER)
+¦   
++---SampleA
+¦       Series10.xls
+¦       Series11.xls
+¦       (...)
+¦       
++---(...)
+```
+
+## Purpose
+### Process Cells Data
 
 Once you run, the script will generate _per sample_ an excel sheet containing all the detected cells containing ≥ 1 vesicles across all series and, for each cell, the respective:
 - number of vesicles
@@ -51,9 +69,15 @@ Plots are automatically generated as well: a boxplot overlapped with a swarm plo
 
 ![BoxPlot](https://user-images.githubusercontent.com/26262402/67725215-7b198400-f9d9-11e9-8bc5-7de20af7ff83.png)
 
-By editing the :page_facing_up: `config.json` you can set:
-+ sample names 
+By editing the :page_facing_up: `config_cells.json` you can set:
++ sample names (to replace SampleA, and so on, name)
 + sheet and columns name in source excel files
+
+### Process Dendrite Data
+
+This is a simpler application which aggregates the information from different selected sheets and saves to an excel file the selected metrics (mean, max, min, sum, 50%), which can be set in the configuration file (:page_facing_up: `config_dendrite.json`). 
+
+As previously, you can rename the samples. Similar plots are generated as well.
 
 
 ## Report Error or Feature

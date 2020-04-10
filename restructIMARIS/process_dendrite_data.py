@@ -2,7 +2,7 @@ VISUALIZE = False # if True, it just shows the plot; if false, the plot is saved
 
 import sys        
 import easygui
-from fiber.make_summary import IMARISDendriteSumary
+from dendrite.make_summary import IMARISDendriteSumary
 import os
 
 if __name__ == "__main__":
@@ -12,4 +12,8 @@ if __name__ == "__main__":
         directory= easygui.diropenbox()+os.sep
     processor = IMARISDendriteSumary(directory)
     samples_data = processor.ProcessData()
+
+    processor.SaveToExcel(samples_data)
+    for feature in processor.sheets.keys():
+         processor.GenerateBoxPlot(samples_data,feature,visualize=VISUALIZE)
     
