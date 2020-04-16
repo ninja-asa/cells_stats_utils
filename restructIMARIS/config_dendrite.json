@@ -1,0 +1,19 @@
+{
+    "Sheets": {
+        "Dendrite Length": ["mean","min", "max","sum","25%","50%","75%"],
+        "Dendrite Mean Diameter":["mean"]   
+    },
+    "OverallSheet": {
+        "Overall": "Filament Total Number of Filaments"
+    },
+    
+    "SampleLabels":{
+        "SampleA": "first",
+        "SampleB": "ry",
+        "SampleC": "ties",
+        "SampleD": "cathi",
+        "SampleE": "funf",
+        "SampleF": "six",
+        "SampleH": "sieben"
+    }
+}

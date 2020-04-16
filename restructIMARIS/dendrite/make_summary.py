@@ -22,6 +22,7 @@ class IMARISDendriteSumary:
             data=json.load(json_data_file)
         self.sample_labels = data['SampleLabels']
         self.sheets = data['Sheets']
+        self.overall = data["OverallSheet"]
 
     def ProcessData(self):
         self.samples = self.IdentifySamples()
@@ -96,19 +97,34 @@ class IMARISDendriteSumary:
         filename = os.path.join(self.directory, sample_name, series_name+".xls")
         xls = pd.ExcelFile(filename)
         series_df = pd.DataFrame()
+        number_filaments = self.ExistFilaments(xls)
+        if number_filaments == 0:
+            return series_df
+        
         for sheet in self.sheets.keys():
             sheet_series = pd.read_excel(xls,
                                 sheet_name=sheet,
                                 skiprows=2,usecols=[0],header=None)
             series_df = pd.concat([series_df, sheet_series],axis=1)
-        series_df.set_axis([name for name in self.sheets.keys()], axis=1, inplace=True)
+        name_cols = list(self.sheets.keys()) + ["Overall"]
+        number_filaments_series = pd.Series([number_filaments] + [0]*(series_df.shape[0]-1))
+        series_df = pd.concat([series_df,number_filaments_series],axis=1)
+        series_df.set_axis([name for name in name_cols], axis=1, inplace=True)
+        
         return series_df
 
-
+    def ExistFilaments(self,xls_file):
+        overall = list(self.overall.keys())[0]
+        sheet_series = pd.read_excel(xls_file,sheet_name=overall,
+                                skiprows=2,usecols=[0,1],header=None)
+        number_of_filaments = sheet_series[sheet_series[0]==self.overall[overall]][1].values[0]
+        return number_of_filaments
+        
+                                
     def SaveToExcel(self, dendrites_data_):
         print("Saving to {}".format(self.directory+'summary.xlsx'))
 
-        metrics_df = dendrites_data_.groupby('Sample').describe(percentiles=[])
+        metrics_df = dendrites_data_.groupby('Sample').describe()
         output_metrics = pd.DataFrame()
         row = 0;
         cols_selection = []
@@ -117,6 +133,8 @@ class IMARISDendriteSumary:
             sheet_vec = [sheet]*(len(out_metrics))
             l = list(zip(sheet_vec,out_metrics))
             cols_selection = cols_selection + l
+        metrics_df['Overall', 'sum'] = dendrites_data_.groupby('Sample')['Overall'].sum()
+        cols_selection = cols_selection + [('Overall', 'sum')]
         writer = pd.ExcelWriter(self.directory+'summary.xlsx',mode='w')
         metrics_df[cols_selection].unstack(1).to_excel(writer)
         writer.save()
