@@ -4,6 +4,7 @@ import sys
 import easygui
 from dendrite.make_summary import IMARISDendriteSumary
 import os
+import numpy as np
 
 if __name__ == "__main__":
     if  len(sys.argv)>1:
@@ -14,6 +15,9 @@ if __name__ == "__main__":
     samples_data = processor.ProcessData()
 
     processor.SaveToExcel(samples_data)
-    for feature in processor.sheets.keys():
-         processor.GenerateBoxPlot(samples_data,feature,visualize=VISUALIZE)
+    for feature in samples_data.columns.values:
+        if (np.issubdtype(samples_data[feature].dtype, np.number)):
+            processor.GenerateBoxPlot(samples_data,feature,visualize=False)
+         
+
     

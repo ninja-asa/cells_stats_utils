@@ -90,6 +90,9 @@ class IMARISDendriteSumary:
             print("Loading {} ...".format(serie))
             series_df = self.ExtractExcelData(sample_name,serie)
             sample_data = pd.concat([sample_data,series_df],axis=0)
+        writer = pd.ExcelWriter(self.directory+sample_name+'.xlsx',mode='w')
+        sample_data.to_excel(writer)
+        writer.save()
         return sample_data
 
 
@@ -141,11 +144,8 @@ class IMARISDendriteSumary:
     
     def GenerateBoxPlot(self,dataframe, feature, x_range = [], swarmplot=True, visualize = False):
         print("Saving boxplot for {}".format(feature))
-        if x_range == []:
-            x_range = [dataframe[feature].min(), dataframe[feature].max()]
-        f, ax = plt.subplots(figsize=( 20 , len(dataframe['Sample'].unique())*1.5)) # Figure size is set here, you can adjust it
+        f, ax = plt.subplots() # Figure size is set here, you can adjust it
         sns.boxplot(x=feature, y="Sample", data=dataframe, palette=sns.light_palette((210, 90, 60), input="husl"))
-        sns.swarmplot(x=feature, y="Sample", data=dataframe, alpha=".75", color="0.3")
         ax.xaxis.grid(True)
         ax.set(ylabel="")
         plt.tight_layout()
