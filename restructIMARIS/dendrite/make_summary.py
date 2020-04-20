@@ -90,10 +90,12 @@ class IMARISDendriteSumary:
             print("Loading {} ...".format(serie))
             series_df = self.ExtractExcelData(sample_name,serie)
             sample_data = pd.concat([sample_data,series_df],axis=0)
-        writer = pd.ExcelWriter(self.directory+sample_name+'.xlsx',mode='w')
-        sample_data.to_excel(writer)
-        writer.save()
+        self.SaveSampleDataToExcel(sample_data,sample_name)
+        # writer = pd.ExcelWriter(self.directory+sample_name+'.xlsx',mode='w')
+        # sample_data.to_excel(writer)
+        # writer.save()
         return sample_data
+    
 
 
     def ExtractExcelData(self,sample_name,series_name):
@@ -123,7 +125,26 @@ class IMARISDendriteSumary:
         number_of_filaments = sheet_series[sheet_series[0]==self.overall[overall]][1].values[0]
         return number_of_filaments
         
-                                
+    def SaveSampleDataToExcel(self, sample_data,sample_name):
+        print("Saving to {}".format(self.directory+sample_name+'.xlsx'))
+        writer = pd.ExcelWriter(self.directory+sample_name+'.xlsx',mode='w')
+        sample_data.to_excel(writer,sheet_name="series")
+        metrics_df = sample_data.describe()
+        metrics_df = metrics_df.unstack(1)
+        output_metrics = pd.DataFrame()
+        row = 0;
+        cols_selection = []
+        for sheet,out_metrics in self.sheets.items():
+            metrics_df[sheet,'sum'] = sample_data[sheet].sum()
+            sheet_vec = [sheet]*(len(out_metrics))
+            l = list(zip(sheet_vec,out_metrics))
+            cols_selection = cols_selection + l
+        
+        metrics_df['Overall', 'sum'] = sample_data['Overall'].sum()
+        cols_selection = cols_selection + [('Overall', 'sum')]
+        metrics_df[cols_selection].unstack(1).to_excel(writer,sheet_name="summary")
+        writer.save()
+        return                                
     def SaveToExcel(self, dendrites_data_):
         print("Saving to {}".format(self.directory+'summary.xlsx'))
 
