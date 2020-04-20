@@ -27,15 +27,19 @@ class IMARISDendriteSumary:
     def ProcessData(self):
         self.samples = self.IdentifySamples()
         self.samples_df = pd.DataFrame()
+        
         for sample in self.samples:
             sample_data = self.GetSampleData(sample)
             sample_col_df  = pd.DataFrame(
                     {'Sample':
                        [sample]*sample_data.shape[0]},index=sample_data.index.values)
-            sample_data = pd.concat([sample_data,sample_col_df],axis=1)
-            self.samples_df = pd.concat([self.samples_df,sample_data],axis=0)
-        
+            sample_data = pd.concat([sample_data,sample_col_df],axis=1,sort=False)
+            sample_data.reset_index(drop=True, inplace=True)
+            
+            self.samples_df = pd.concat([self.samples_df,sample_data],axis=0,sort=False)        
+            self.samples_df.reset_index(drop=True, inplace=True)
         self.samples_df['Sample']=self.samples_df.apply(self.ReplaceSampleLabels,axis=1)
+        
         self.samples_df.to_pickle(self.directory+'dendrites_data_'+ date.today().strftime("%Y%m%d")+ ".pkl")
         return self.samples_df
 
@@ -89,7 +93,11 @@ class IMARISDendriteSumary:
         for serie in series:
             print("Loading {} ...".format(serie))
             series_df = self.ExtractExcelData(sample_name,serie)
-            sample_data = pd.concat([sample_data,series_df],axis=0)
+            series_col_df  = pd.DataFrame(
+                    {'Series':
+                       [serie]*series_df.shape[0]},index=series_df.index.values)
+            series_df = pd.concat([series_df,series_col_df],axis=1,sort=False)
+            sample_data = pd.concat([sample_data,series_df],axis=0,sort=False)
         self.SaveSampleDataToExcel(sample_data,sample_name)
         # writer = pd.ExcelWriter(self.directory+sample_name+'.xlsx',mode='w')
         # sample_data.to_excel(writer)
@@ -110,10 +118,10 @@ class IMARISDendriteSumary:
             sheet_series = pd.read_excel(xls,
                                 sheet_name=sheet,
                                 skiprows=2,usecols=[0],header=None)
-            series_df = pd.concat([series_df, sheet_series],axis=1)
+            series_df = pd.concat([series_df, sheet_series],axis=1,sort=False)
         name_cols = list(self.sheets.keys()) + ["Overall"]
         number_filaments_series = pd.Series([number_filaments] + [0]*(series_df.shape[0]-1))
-        series_df = pd.concat([series_df,number_filaments_series],axis=1)
+        series_df = pd.concat([series_df,number_filaments_series],axis=1,sort=False)
         series_df.set_axis([name for name in name_cols], axis=1, inplace=True)
         
         return series_df
@@ -129,20 +137,20 @@ class IMARISDendriteSumary:
         print("Saving to {}".format(self.directory+sample_name+'.xlsx'))
         writer = pd.ExcelWriter(self.directory+sample_name+'.xlsx',mode='w')
         sample_data.to_excel(writer,sheet_name="series")
-        metrics_df = sample_data.describe()
-        metrics_df = metrics_df.unstack(1)
+        metrics_df = sample_data.groupby('Series').describe()
+        # metrics_df = metrics_df
         output_metrics = pd.DataFrame()
         row = 0;
         cols_selection = []
         for sheet,out_metrics in self.sheets.items():
-            metrics_df[sheet,'sum'] = sample_data[sheet].sum()
+            metrics_df[sheet,'sum'] = sample_data.groupby('Series')[sheet].sum()
             sheet_vec = [sheet]*(len(out_metrics))
             l = list(zip(sheet_vec,out_metrics))
             cols_selection = cols_selection + l
         
-        metrics_df['Overall', 'sum'] = sample_data['Overall'].sum()
+        metrics_df['Overall', 'sum'] = sample_data.groupby('Series')['Overall'].sum()
         cols_selection = cols_selection + [('Overall', 'sum')]
-        metrics_df[cols_selection].unstack(1).to_excel(writer,sheet_name="summary")
+        metrics_df[cols_selection].to_excel(writer,sheet_name="summary")
         writer.save()
         return                                
     def SaveToExcel(self, dendrites_data_):
