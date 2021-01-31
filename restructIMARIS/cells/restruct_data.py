@@ -65,6 +65,11 @@ class IMARISDataProcessor:
                 print("Loading {} ...".format(serie))
                 # Handle spots data              
                 nr_spots = self.ExtractSerieSpotsData(sample, serie) # get the cells which we categorized as "spot"
+                if nr_spots == 0:
+                    print("No Vesicles or No Data|")
+                    continue
+                    
+                
                 serie_spots = pd.DataFrame({'Sample':[sample],self.SPOTS_OUT_COL_NAME:[nr_spots]}, index=[0])
                 sample_spots = pd.concat([sample_spots,serie_spots])
 
@@ -91,10 +96,10 @@ class IMARISDataProcessor:
             samples_dataframes = pd.concat((samples_dataframes,sample_data))
             samples_spots = pd.concat((samples_spots,sample_spots))
             if save_to_excel:
-                with pd.ExcelWriter(directory+sample+'.xlsx') as writer:
+                with pd.ExcelWriter(self.directory+sample+'.xlsx') as writer:
                     sample_data.to_excel(writer,sheet_name="cell_data", header=True) 
                     sample_spots.to_excel(writer,sheet_name="spots_data", header=True) 
-        print("Data saved to {}".format(directory))
+        print("Data saved to {}".format(self.directory))
         if samples_dataframes.empty:
             return samples_dataframes, samples_spots
 
@@ -160,8 +165,10 @@ class IMARISDataProcessor:
             xls = pd.ExcelFile(filename+'_Spots.xls')
         else:
             xls = pd.ExcelFile(filename+'_spots.xls')
-
-        return pd.read_excel(xls,sheet_name='Diameter',skiprows=1).shape[0] 
+        try:
+            return pd.read_excel(xls,sheet_name='Diameter',skiprows=1).shape[0] 
+        except:
+            return 0
 
     def ExtractSerieCellsData(self, sample_name, serie_name):
         """ExtractCellsData extracts serie's cells data from the "Series[XX]_cells.xls" file
@@ -269,7 +276,7 @@ class IMARISDataProcessor:
             x_range = [dataframe[feature].min(), dataframe[feature].max()]
         f, ax = plt.subplots(figsize=( 20 , len(dataframe['Sample'].unique())*1.5)) # Figure size is set here, you can adjust it
         sns.boxplot(x=feature, y="Sample", data=dataframe, palette=sns.light_palette((210, 90, 60), input="husl"))
-        sns.swarmplot(x=feature, y="Sample", data=dataframe, alpha=".75", color="0.3")
+        sns.swarmplot(x=feature, y="Sample", data=dataframe, alpha=0.75, color="0.3")
         ax.xaxis.grid(True)
         ax.set(ylabel="")
         plt.tight_layout()
