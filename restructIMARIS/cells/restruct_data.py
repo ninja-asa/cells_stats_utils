@@ -298,8 +298,8 @@ class IMARISDataProcessor:
         if x_range == []:
             x_range = [dataframe[feature].min(), dataframe[feature].max()]
         f, ax = plt.subplots(figsize=( 20 , len(dataframe['Sample'].unique())*1.5)) # Figure size is set here, you can adjust it
-        sns.boxplot(x=feature, y="Sample", data=dataframe, palette=sns.light_palette((210, 90, 60), input="husl"))
-        sns.swarmplot(x=feature, y="Sample", data=dataframe, alpha=0.75, color="0.3")
+        sns.boxplot(x=feature, y="Sample", data=dataframe)
+        sns.stripplot(x=feature, y="Sample", data=dataframe, alpha=0.75, color="0.3")
         ax.xaxis.grid(True)
         ax.set(ylabel="")
         plt.tight_layout()
