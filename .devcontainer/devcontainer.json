@@ -1,0 +1,15 @@
+{
+    "name": "Python 3.10 Slim",
+    "image": "python:3.10-slim",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.vscode-pylance-themes",
+                "ms-python.python-insiders",
+                "ms-python.vscode-pylance-insiders"
+            ]
+        }
+    }
+}
