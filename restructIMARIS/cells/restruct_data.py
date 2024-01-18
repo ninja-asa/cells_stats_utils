@@ -32,12 +32,24 @@ class IMARISDataProcessor:
         self.ReadConfigFile()
 
     def ReadConfigFile(self):
-        with open("config_cells.json") as json_data_file:
-            data=json.load(json_data_file)
-        self.CELLS_SHEET_COLUMN = data['CellSheetColNames']
-        self.sample_labels = data['SampleLabels']
-        self.SPOTS_OUT_COL_NAME = data['SpotOutputName']
-        self.VESICLES_OVERALL_SHEET = data['VesiclesOverallSheetColNames']
+        config_filename = "config_cells.json"
+        try:
+
+            with open(config_filename) as json_data_file:
+                data=json.load(json_data_file)
+            self.CELLS_SHEET_COLUMN = data['CellSheetColNames']
+            self.sample_labels = data['SampleLabels']
+            self.SPOTS_OUT_COL_NAME = data['SpotOutputName']
+            self.VESICLES_OVERALL_SHEET = data['VesiclesOverallSheetColNames']
+        except:
+            raise Exception(f"Could not read config file {config_filename}.")
+        print(f"{config_filename} read successfully.")
+        
+        print(f"Cells sheet column names: {json.dumps(self.CELLS_SHEET_COLUMN, indent=4)}")
+        print(f"Sample labels: {json.dumps(self.sample_labels,indent=4)}")
+        print(f"Spot output column name: {json.dumps(self.SPOTS_OUT_COL_NAME,indent=4)}")
+        print(f"Vesicles overall sheet column names: {json.dumps(self.VESICLES_OVERALL_SHEET,indent=4)}")
+        return
 
     
     def ExtractSamplesData(self, save_to_excel = True, save_to_pickle = False):
@@ -50,12 +62,16 @@ class IMARISDataProcessor:
         Returns:
             pd.DataFrame: Samples data
         """
+        print("=====================================")
         self.samples_name = self.IdentifySamples()
+        print("=====================================")
         self.VerifySampleNames()
+        print("=====================================")
         samples_dataframes = pd.DataFrame()
         samples_spots = pd.DataFrame() 
         # Iterating over each (sample) folder
         for sample in self.samples_name:
+            print("=====================================")
             print("Processing {}".format(sample))
             
             series = self.IdentifySeries(sample) # and getting all the series                        
@@ -65,11 +81,6 @@ class IMARISDataProcessor:
                 print("Loading {} ...".format(serie))
                 # Handle spots data              
                 nr_spots = self.ExtractSerieSpotsData(sample, serie) # get the cells which we categorized as "spot"
-                if nr_spots == 0:
-                    print("No Vesicles or No Data|")
-                    continue
-                    
-                
                 serie_spots = pd.DataFrame({'Sample':[sample],self.SPOTS_OUT_COL_NAME:[nr_spots]}, index=[0])
                 sample_spots = pd.concat([sample_spots,serie_spots])
 
@@ -121,10 +132,14 @@ class IMARISDataProcessor:
 
         list_samples =[]
         entries = os.listdir(self.directory) # all files/folder within provided directory
+        print(f"Total number of entries: {len(entries)}")
+        print("Will only include folders.")
         for entry in entries:
-            if os.path.isdir(self.directory+entry) and 'Sample' in entry: # if it is a folder and contains "Sample"
+            if os.path.isdir(self.directory+entry): # if it is a folder
                 list_samples.append(entry) # added to the list of samples
-        list_samples.sort() # sort them 
+        list_samples.sort() # sort them
+        print(f"Found{len(list_samples)} samples.")
+        print(list_samples)
         return list_samples  
 
     def VerifySampleNames(self):
@@ -134,6 +149,7 @@ class IMARISDataProcessor:
             for identified_sample_name in self.samples_name:
                 if identified_sample_name not in self.sample_labels.keys():
                     self.sample_labels[identified_sample_name]=identified_sample_name
+        print(f"Samples in config and in folder: {self.sample_labels}")
                 
     def IdentifySeries(self, sample_name):
         """IdentifySeries finds within a sample folder, all the series.
@@ -165,6 +181,7 @@ class IMARISDataProcessor:
             xls = pd.ExcelFile(filename+'_Spots.xls')
         else:
             xls = pd.ExcelFile(filename+'_spots.xls')
+
         try:
             return pd.read_excel(xls,sheet_name='Diameter',skiprows=1).shape[0] 
         except:
@@ -198,9 +215,15 @@ class IMARISDataProcessor:
         # remove nr of vesicles <1
         indices = data_dict['Vesicles']>0
 
-        
-        sample_data = pd.concat([data[indices.values] for data in data_dict.values()],
-                                axis=1)
+        try:
+            sample_data = pd.concat([data[indices.values] for data in data_dict.values()],
+                                    axis=1)
+        except:
+            error_str = "Could not concatenate data from different sheets."
+            # iterate over each key of data_Dict and print their length
+            for key in data_dict.keys():
+                error_str += f"\n{key}: {len(data_dict[key])}"
+            raise Exception(error_str)
         for assigned_name, sheet_col_name in self.CELLS_SHEET_COLUMN.items():
             sample_data.rename(columns = {sheet_col_name[1]:assigned_name},inplace=True)
         sample_data.index.name="Cell ID"
