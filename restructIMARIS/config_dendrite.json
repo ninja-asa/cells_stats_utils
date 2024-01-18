@@ -8,12 +8,8 @@
     },
     
     "SampleLabels":{
-        "SampleA": "first",
-        "SampleB": "ry",
-        "SampleC": "ties",
-        "SampleD": "cathi",
-        "SampleE": "funf",
-        "SampleF": "six",
-        "SampleH": "sieben"
+        "SampleA": "AlgMod_NoLPS_DIV3",
+        "SampleB": "AlgMod_WithLPS_n1_DIV3",
+        "SampleC": "AlgMod_WithLPS_n2_DIV3"
     }
 }

@@ -1,17 +1,23 @@
 {
     "SampleLabels":{
-        "SampleA": "first",
-        "SampleB": "ry",
-        "SampleC": "ties",
-        "SampleD": "cathi",
-        "SampleE": "funf",
-        "SampleF": "six",
-        "SampleH": "sieben"
+        "MixACTR": "CTR 2% Alg Mod 60:40",
+        "MixALPS": "LPS 2% Alg Mod 60:40",
+        "MixBCTR": "CTR 2% Alg Mod 30:70",
+        "MixBLPS": "LPS 2% Alg Mod 30:70",
+        "MixCCTR": "CTR 1% Alg Mod 60:40",
+        "MixCLPS": "LPS 1% Alg Mod 60:40",
+        "SampleG": "CTL24h_96h_gel3",
+        "SampleH": "CTL24h_96h_gel2",
+        "SampleI": "CTL24h_96h_gel1",
+        "SampleJ": "CTL24h_0h_gel3",
+        "SampleK": "CTL24h_0h_gel2",
+        "SampleL": "CTL24h_0h_gel1"
     },
     "CellSheetColNames":{
-        "Vesicles": ["Cell Number Of Vesicles Ves-34","Cell Number Of Vesicles"],
-        "Intensity" : ["Cell Intensity Mean Ch=2 Img=1","Cell Intensity Mean"],
-        "Sphericity" : ["Cell Sphericity", "Cell Sphericity"],
+        "Vesicles": ["Cell Number Of Vesicles Ves-31","Cell Number Of Vesicles"],
+	"Intensity_Mean" : ["Cell Intensity Mean Ch=2 Img=1","Cell Intensity Mean"],
+        "Intensity_Sum" : ["Cell Intensity Sum Ch=2 Img=1","Cell Intensity Sum"],
+        "Sphericity" : ["Cell Volume", "Cell Volume"],
         "Volume" : ["Cell Volume", "Cell Volume"]
     },
     "VesiclesOverallSheetColNames": ["Overall","Total Number of Vesicles Type As"]
